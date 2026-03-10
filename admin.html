@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin | Mapmaker JLS</title>
+  <link rel="stylesheet" href="/assets/styles.css" />
+  <script src="/assets/config.js"></script>
+</head>
+<body>
+  <nav class="nav"><a class="brand" href="/">🗺️ MAPMAKER JLS ADMIN</a></nav>
+  <main class="container">
+    <h1>🛠️ Staff Control Room</h1>
+    <p class="small">Admin-only tools for user setup + stamp/reward management.</p>
+    <p id="adminStatus" class="status">Checking admin pass...</p>
+
+    <div class="grid" style="padding:0;">
+      <form id="create-user" class="card">
+        <h3>Create User</h3>
+        <input required name="username" placeholder="username" />
+        <input required name="password" type="password" placeholder="temp password" />
+        <select name="role"><option value="user">user</option><option value="admin">admin</option></select>
+        <button>Create Account</button>
+      </form>
+
+      <form id="reset-password" class="card">
+        <h3>Reset Password</h3>
+        <input required name="username" placeholder="username" />
+        <input required name="password" type="password" placeholder="new password" />
+        <button>Reset</button>
+      </form>
+
+      <form id="adjust-stamps" class="card">
+        <h3>Add / Remove Stamps</h3>
+        <input required name="username" placeholder="username" />
+        <input required name="delta" type="number" min="-15" max="15" placeholder="+1 or -1" />
+        <button>Apply</button>
+      </form>
+
+      <form id="redeem-reward" class="card">
+        <h3>Mark Reward Redeemed</h3>
+        <input required name="username" placeholder="username" />
+        <input required name="milestone" type="number" min="1" max="15" placeholder="milestone stamp" />
+        <button>Mark Redeemed</button>
+      </form>
+    </div>
+
+    <p id="formStatus" class="status"></p>
+  </main>
+
+  <script type="module">
+    import { requireAuth, getProfile, apiPost } from '/assets/app.js';
+
+    await requireAuth();
+    const profile = await getProfile();
+    const adminStatus = document.getElementById('adminStatus');
+    if (profile.role !== 'admin') {
+      adminStatus.textContent = 'You are not an admin. Bounce.';
+      adminStatus.className = 'status error';
+      throw new Error('Not admin');
+    }
+    adminStatus.textContent = 'Admin verified. Do good, no chaos.';
+    adminStatus.className = 'status ok';
+
+    const status = document.getElementById('formStatus');
+    const wire = (id, endpoint, transform = (fd)=>Object.fromEntries(fd.entries())) => {
+      document.getElementById(id).addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const payload = transform(new FormData(e.target));
+        try {
+          const result = await apiPost(endpoint, payload);
+          status.textContent = `✅ ${result.message}`;
+          status.className = 'status ok';
+        } catch (err) {
+          status.textContent = `❌ ${err.message}`;
+          status.className = 'status error';
+        }
+      });
+    };
+
+    wire('create-user', 'admin-create-user');
+    wire('reset-password', 'admin-reset-password');
+    wire('adjust-stamps', 'admin-adjust-stamps', (fd) => ({ username: fd.get('username'), delta: Number(fd.get('delta')) }));
+    wire('redeem-reward', 'admin-redeem-reward', (fd) => ({ username: fd.get('username'), milestone_stamp: Number(fd.get('milestone')) }));
+  </script>
+</body>
+</html>

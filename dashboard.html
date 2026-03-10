@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Dashboard | Mapmaker JLS</title>
+  <link rel="stylesheet" href="/assets/styles.css" />
+  <script src="/assets/config.js"></script>
+</head>
+<body>
+  <nav class="nav">
+    <a class="brand" href="/">🗺️ MAPMAKER JLS</a>
+    <div class="nav-links">
+      <a class="pill secondary" href="/rewards">Rewards</a>
+      <button id="logout" class="ghost">Log out</button>
+    </div>
+  </nav>
+
+  <main class="container">
+    <h1>🔥 Your Lunch Rush Dashboard</h1>
+    <p id="headline" class="small">Loading your stamp hype...</p>
+
+    <section class="card" style="margin-bottom:16px;">
+      <h2>🎟️ Digital Stamp Card</h2>
+      <p id="progressText"></p>
+      <div id="stampGrid" class="stamp-grid"></div>
+    </section>
+
+    <section class="card">
+      <h2>🎁 Rewards status</h2>
+      <div id="rewardList" class="reward-list"></div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { requireAuth, fetchDashboardData, supabase } from '/assets/app.js';
+
+    const session = await requireAuth();
+    if (!session) throw new Error('No session');
+
+    const logoutBtn = document.getElementById('logout');
+    logoutBtn.onclick = async () => {
+      await supabase.auth.signOut();
+      location.href = '/login';
+    };
+
+    const { overview, rewards } = await fetchDashboardData();
+    document.getElementById('headline').textContent = `Yo ${overview.username}, keep cooking. 🍕`;
+    document.getElementById('progressText').textContent = `${overview.stamp_count} / 15 stamps • Next reward at ${overview.next_milestone ?? 'MAXED OUT'} stamps`;
+
+    const milestones = new Set([1,5,8,10,12,15]);
+    const grid = document.getElementById('stampGrid');
+    for (let i = 1; i <= 15; i++) {
+      const cell = document.createElement('div');
+      cell.className = `stamp ${i <= overview.stamp_count ? 'earned' : ''} ${milestones.has(i) ? 'milestone' : ''}`;
+      cell.textContent = i;
+      grid.appendChild(cell);
+    }
+
+    const list = document.getElementById('rewardList');
+    rewards.forEach((r) => {
+      const item = document.createElement('div');
+      const state = r.redeemed_at ? 'redeemed' : r.unlocked_at ? 'unlocked' : 'locked';
+      item.className = 'reward-item';
+      item.innerHTML = `<div><strong>${r.reward_name}</strong><div class="small">Milestone: ${r.milestone_stamp} stamps</div></div>
+        <span class="tag ${state}">${state.toUpperCase()}</span>`;
+      list.appendChild(item);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login | Mapmaker JLS</title>
+  <link rel="stylesheet" href="/assets/styles.css" />
+  <script src="/assets/config.js"></script>
+</head>
+<body>
+  <nav class="nav"><a class="brand" href="/">🗺️ MAPMAKER JLS</a></nav>
+  <main class="container">
+    <h1>🚨 LUNCH RUSH INCOMING — Sign in</h1>
+    <p class="small">Use your student username + password to see your digital stamp card.</p>
+    <form id="login-form" class="card">
+      <label>Username<input required name="username" placeholder="ex: marcus8" /></label>
+      <label>Password<input required type="password" name="password" /></label>
+      <button type="submit">⚡ Log In</button>
+      <p id="status" class="status">No account yet? Ask Mapmaker staff.</p>
+    </form>
+  </main>
+
+  <script type="module">
+    import { supabase, usernameToEmail } from '/assets/app.js';
+
+    const form = document.getElementById('login-form');
+    const statusEl = document.getElementById('status');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      statusEl.textContent = 'Checking your route pass...';
+      statusEl.className = 'status';
+      const fd = new FormData(form);
+      const email = usernameToEmail(fd.get('username'));
+
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password: fd.get('password')
+      });
+
+      if (error) {
+        statusEl.textContent = `Nope: ${error.message}`;
+        statusEl.className = 'status error';
+        return;
+      }
+      statusEl.textContent = 'Logged in. Zooming to dashboard...';
+      statusEl.className = 'status ok';
+      window.location.href = '/dashboard';
+    });
+  </script>
+</body>
+</html>
