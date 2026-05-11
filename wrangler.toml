@@ -1,0 +1,12 @@
+name = "bubble-browser-proxy"
+main = "src/index.js"
+compatibility_date = "2026-05-10"
+
+[durable_objects]
+bindings = [
+  { name = "RATE_LIMITER", class_name = "RateLimiter" }
+]
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["RateLimiter"]
